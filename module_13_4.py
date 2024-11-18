@@ -13,8 +13,7 @@ except ImportError:
 
 def calc_calories(gender: str, age: float, growth: float, weight: float):
     """
-    формула Миффлина - Сан Жеора для подсчёта нормы калорий
-    # (для женщин или мужчин - на ваше усмотрение).
+    формула Миффлина - Сан Жеора для подсчёта нормы калорий для женщин или мужчин
     :param gender: пол, 'M' или 'F'
     :param age: вес в кг
     :param growth: рост в см
