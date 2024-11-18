@@ -1,5 +1,6 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types.message import Message
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage, BaseStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
@@ -38,20 +39,24 @@ class UserState(StatesGroup):
 bot = Bot(token=token)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
+kb = ReplyKeyboardMarkup(resize_keyboard=True)
+info_button = KeyboardButton(text="Информация")
+calc_button = KeyboardButton(text="Рассчитать")
+kb.row(info_button, calc_button)
+
 
 @dp.message_handler(commands=['start'])
 async def start_message(message: Message):
     """ обработчик команды start """
     # печатает строку в консоли 'Привет! Я бот помогающий твоему здоровью.' .
     # Запускается только когда написана команда '/start' в чате с ботом.
-    await message.answer('Привет! Я бот помогающий твоему здоровью.')
-    await message.answer('Для начала работы введите Calories')
+    await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
 
 
-@dp.message_handler(text='Calories')
+@dp.message_handler(text='Рассчитать')
 async def set_age(message: Message):
     # Эта функция должна выводить в Telegram-бот сообщение 'Введите свой возраст:'.)
-    await message.answer('Введите свой возраст:')
+    await message.answer('Введите свой возраст:', reply_markup=types.ReplyKeyboardRemove())
     # После ожидать ввода возраста в атрибут UserState.age при помощи метода set.
     await UserState.age.set()
 
@@ -139,7 +144,7 @@ if __name__ == '__main__':
 В итоге при команде /start у вас должна присылаться клавиатура с двумя кнопками. При нажатии на кнопку с надписью 'Рассчитать' срабатывает функция set_age с которой начинается работа машины состояний для age, growth и weight.
 
 Пример результата выполнения программы:
-Клавиатура по команде /start:
+Клавиатура по команде /start:`
 
 После нажатия на кнопку 'Рассчитать':
 
