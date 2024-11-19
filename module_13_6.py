@@ -1,6 +1,8 @@
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types.message import Message
+from aiogram.types.callback_query import CallbackQuery
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.contrib.fsm_storage.memory import MemoryStorage, BaseStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
@@ -27,6 +29,10 @@ def calc_calories(gender: str, age: float, growth: float, weight: float):
     return (10.0 * weight) + (6.25 * growth) - (5.0 * age) + 5.0 if gender == 'M' else -161.0
 
 
+bot = Bot(token=token)
+dp = Dispatcher(bot, storage=MemoryStorage())
+
+
 class UserState(StatesGroup):
     # Создайте класс UserState наследованный от StatesGroup.
     # Внутри этого класса опишите 3 объекта класса State: age, growth, weight (возраст, рост, вес).
@@ -36,27 +42,43 @@ class UserState(StatesGroup):
     weight = State()
 
 
-bot = Bot(token=token)
-dp = Dispatcher(bot, storage=MemoryStorage())
-
-kb = ReplyKeyboardMarkup(resize_keyboard=True)
-info_button = KeyboardButton(text="Информация")
-calc_button = KeyboardButton(text="Рассчитать")
-kb.row(info_button, calc_button)
-
-
 @dp.message_handler(commands=['start'])
 async def start_message(message: Message):
     """ обработчик команды start """
     # печатает строку в консоли 'Привет! Я бот помогающий твоему здоровью.' .
     # Запускается только когда написана команда '/start' в чате с ботом.
+    kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+    info_button = KeyboardButton(text="Информация")
+    calc_button = KeyboardButton(text="Рассчитать")
+    kb.row(info_button, calc_button)
     await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
 
 
 @dp.message_handler(text='Рассчитать')
-async def set_age(message: Message):
+async def main_menu(message: Message):
+    kb = InlineKeyboardMarkup()
+    info_button = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
+    calc_button = InlineKeyboardButton(text='Формулы расчёта', callback_data='formulas')
+    kb.row(info_button, calc_button)
+    await message.answer('Выберите опцию:', reply_markup=kb)
+
+
+@dp.callback_query_handler(text='formulas')
+async def get_formulas(call: CallbackQuery):
+    await call.message.answer('''\
+формула Миффлина - Сан Жеора для подсчёта нормы калорий
+для женщин:
+(10 х вес в кг) + (6, 25 х рост в см) – (5 х возраст в г) -161
+для мужчин:
+(10 х вес в кг) + (6, 25 х рост в см) – (5 х возраст в г) + 5\
+''')
+
+
+@dp.callback_query_handler(text='calories')
+async def set_age(call: CallbackQuery):
     # Эта функция должна выводить в Telegram-бот сообщение 'Введите свой возраст:'.)
-    await message.answer('Введите свой возраст:', reply_markup=types.ReplyKeyboardRemove())
+    await call.message.answer('Введите свой возраст:')#, reply_markup=)
+    await call.answer()
     # После ожидать ввода возраста в атрибут UserState.age при помощи метода set.
     await UserState.age.set()
 
@@ -131,6 +153,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 """
 2024/01/22 00:00|Домашнее задание по теме "Инлайн клавиатуры".
