@@ -75,15 +75,16 @@ async def get_buying_list(message: Message):
     # Создайте Inline меню из 4 кнопок с надписями "Product1", "Product2", "Product3", "Product4".
     # У всех кнопок назначьте callback_data="product_buying"
     kb = InlineKeyboardMarkup()
-    kb.row(*[InlineKeyboardButton(text=name, callback_data="product_buying") for name, _, _, _ in products])
+    kb.row(*[InlineKeyboardButton(text=name, callback_data=f"product_buying {name}") for name, _, _, _ in products])
     # В конце выведите ранее созданное Inline меню с надписью "Выберите продукт для покупки:".
     await message.answer('Выберите продукт для покупки:', reply_markup=kb)
 
 
-@dp.callback_query_handler(text='product_buying')
+@dp.callback_query_handler(lambda t: t.data and t.data.startswith('product_buying '))
 async def send_confirm_message(call: CallbackQuery):
     # Функция send_confirm_message, присылает сообщение "Вы успешно приобрели продукт!"
-    await call.message.answer("Вы успешно приобрели продукт!")
+    product_name = call.data.replace('product_buying ', '')
+    await call.message.answer(f"Вы успешно приобрели {product_name}!")
 
 
 @dp.message_handler(text='Рассчитать')
