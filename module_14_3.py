@@ -1,3 +1,5 @@
+from email import message_from_binary_file
+
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types.message import Message
 from aiogram.types.callback_query import CallbackQuery
@@ -29,6 +31,9 @@ def calc_calories(gender: str, age: float, growth: float, weight: float):
     return (10.0 * weight) + (6.25 * growth) - (5.0 * age) + 5.0 if gender == 'M' else -161.0
 
 
+products = [(f"Продукт{i}", f"описание {i}", 100*i, f'img{i}.jpg') for i in range(1, 5)]
+
+
 bot = Bot(token=token)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
@@ -50,12 +55,43 @@ async def start_message(message: Message):
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     info_button = KeyboardButton(text="Информация")
     calc_button = KeyboardButton(text="Рассчитать")
-    kb.row(info_button, calc_button)
+    # В главную (обычную) клавиатуру меню добавьте кнопку "Купить".
+    buy_button = KeyboardButton(text="Купить")
+    kb.row(info_button, calc_button, buy_button)
     await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
+
+
+# Message хэндлер, который реагирует на текст "Купить" и оборачивает функцию get_buying_list(message).
+@dp.message_handler(text='Купить')
+async def get_buying_list(message: Message):
+    # Создайте и дополните клавиатуры:
+
+    # Функция get_buying_list должна выводить надписи
+    # 'Название: Product<number> | Описание: описание <number> | Цена: <number * 100>' 4 раза.
+    # После каждой надписи выводите картинки к продуктам.
+    for name, description, price, img in products:
+        text = f'Название: {name} | Описание: {description} | Цена: {price}'
+        with open(img, 'rb') as file:
+            await message.answer_photo(file, text)
+
+    # Создайте Inline меню из 4 кнопок с надписями "Product1", "Product2", "Product3", "Product4".
+    # У всех кнопок назначьте callback_data="product_buying"
+    kb = InlineKeyboardMarkup()
+    kb.row(*[InlineKeyboardButton(text=name, callback_data="product_buying") for name, _, _, _ in products])
+    # В конце выведите ранее созданное Inline меню с надписью "Выберите продукт для покупки:".
+    await message.answer('Выберите продукт для покупки:', reply_markup=kb)
+
+
+# # Создайте хэндлеры и функции к ним:
+# @dp.callback_query_handler(text='calories')
+# async def set_age(call: CallbackQuery):
+#     ...
 
 
 @dp.message_handler(text='Рассчитать')
 async def main_menu(message: Message):
+    # Callback хэндлер, который реагирует на текст "product_buying" и оборачивает функцию send_confirm_message(call).
+    # Функция send_confirm_message, присылает сообщение "Вы успешно приобрели продукт!"
     kb = InlineKeyboardMarkup()
     info_button = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
     calc_button = InlineKeyboardButton(text='Формулы расчёта', callback_data='formulas')
