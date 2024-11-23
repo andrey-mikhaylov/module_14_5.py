@@ -64,13 +64,11 @@ async def start_message(message: Message):
 # Message хэндлер, который реагирует на текст "Купить" и оборачивает функцию get_buying_list(message).
 @dp.message_handler(text='Купить')
 async def get_buying_list(message: Message):
-    # Создайте и дополните клавиатуры:
-
     # Функция get_buying_list должна выводить надписи
-    # 'Название: Product<number> | Описание: описание <number> | Цена: <number * 100>' 4 раза.
-    # После каждой надписи выводите картинки к продуктам.
     for name, description, price, img in products:
+        # 'Название: Product<number> | Описание: описание <number> | Цена: <number * 100>' 4 раза.
         text = f'Название: {name} | Описание: {description} | Цена: {price}'
+        # После каждой надписи выводите картинки к продуктам.
         with open(img, 'rb') as file:
             await message.answer_photo(file, text)
 
@@ -82,10 +80,10 @@ async def get_buying_list(message: Message):
     await message.answer('Выберите продукт для покупки:', reply_markup=kb)
 
 
-# # Создайте хэндлеры и функции к ним:
-# @dp.callback_query_handler(text='calories')
-# async def set_age(call: CallbackQuery):
-#     ...
+@dp.callback_query_handler(text='product_buying')
+async def send_confirm_message(call: CallbackQuery):
+    # Функция send_confirm_message, присылает сообщение "Вы успешно приобрели продукт!"
+    await call.message.answer("Вы успешно приобрели продукт!")
 
 
 @dp.message_handler(text='Рассчитать')
