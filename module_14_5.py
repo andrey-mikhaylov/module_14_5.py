@@ -60,8 +60,8 @@ async def get_buying_list(message: Message):
     for name, description, price, img in products:
         text = f'Название: {name} | Описание: {description} | Цена: {price}'
         try:
-            file = open(img, 'rb')
-            await message.answer_photo(file, text)      # с картинкой, если есть
+            with open(img, 'rb') as file:
+                await message.answer_photo(file, text)  # с картинкой, если есть
         except IOError:
             await message.answer(text)                  # или без картинки
 
@@ -98,7 +98,7 @@ async def get_formulas(call: CallbackQuery):
 
 @dp.callback_query_handler(text='calories')
 async def set_age(call: CallbackQuery):
-    await call.message.answer('Введите свой возраст:')#, reply_markup=)
+    await call.message.answer('Введите свой возраст:')
     await call.answer()
     await UserState.age.set()
 
