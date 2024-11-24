@@ -44,40 +44,107 @@ def fetch_records(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()) ->
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-database_filename = 'database.db'
+def add_user(username: str, email: str, age: int):
+    """
+    добавлять в таблицу Users вашей БД запись с переданными данными
+    :param username:    имя пользователя
+    :param email:       почту
+    :param age:         возраст
+    :return:
+    """
+    # Баланс у новых пользователей всегда равен 1000.
+    # Для добавления записей в таблице используйте SQL запрос.
+    ...
+
+
+def is_included(username: str):
+    """
+    :param username:    имя пользователя
+    :return:            True, если такой пользователь есть в таблице Users в противном случае False
+    """
+    # Для получения записей используйте SQL запрос.
+    ...
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+db_id               = 'INTEGER PRIMARY KEY'
+db_text             = 'TEXT'
+db_text_not_null    = 'TEXT NOT NULL'
+db_int              = 'INTEGER'
+db_int_not_null     = 'INTEGER NOT NULL'
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+TableKey = tuple[str, str]
+TableKeys = tuple[TableKey, ...]
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# products
 
 products_table = 'Products'
-product_keys = 'title, description, price, image'
 Product = list[str, str, int, str]
+products_keys = (
+    ('id',          db_id),             # первичный ключ
+    ('title',       db_text_not_null),  # название продукта
+    ('description', db_text),           # описание
+    ('price',       db_int_not_null),   # цена
+    ('image',       db_text),           # картинка
+)
 
-users_table = 'Users'
 
-
-def initiate_db():
-    """
-    создаёт таблицу Products, если она ещё не создана при помощи SQL запроса.
-    """
-    db = open_db(database_filename)
-
-    keys = ', '.join((
-        'id INTEGER PRIMARY KEY',   # целое число, первичный ключ
-        'title TEXT NOT NULL',      # название продукта - текст (не пустой)
-        'description TEXT',         # описание - текст
-        'price INTEGER NOT NULL',   # цена - целое число (не пустой)
-        'image TEXT'                # картинка
-        ))
-
-    create_table(db, products_table, keys)
-
-    delete_from_db(db, products_table)
-
-    for i in range(1, 5):
-        insert_to_db(db, products_table, product_keys, (
+def fill_products_table(db: Db, table: str, keys: TableKeys, count: int):
+    key_names = ', '.join([key_name for key_name, _ in keys][1:])
+    for i in range(1, count+1):
+        insert_to_db(db, table, key_names, (
             f"Продукт{i}",
             f"описание {i}",
             100 * i,
             f'img{i}.jpg'
         ))
+
+
+def create_products_table(db: Db, table: str, keys: TableKeys):
+    keys = ', '.join([f'{key_name} {key_type}' for key_name, key_type in keys])
+    create_table(db, table, keys)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# users
+
+users_table = 'Users'
+User = list[str, str, int, int]
+users_keys = (
+    ('id',          db_id),             # первичный ключ
+    ('username',    db_text_not_null),
+    ('email',       db_text_not_null),
+    ('age',         db_int_not_null),
+    ('balance',     db_int_not_null),
+)
+
+
+def create_users_table(db: Db, table: str, keys: TableKeys):
+    keys = ', '.join([f'{key_name} {key_type}' for key_name, key_type in keys])
+    create_table(db, table, keys)
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+database_filename = 'database.db'
+
+def initiate_db():
+    """
+    создаёт
+    - таблицу Products, если она ещё не создана при помощи SQL запроса.
+    - таблицы Users, если она ещё не создана при помощи SQL запроса.
+    """
+    db = open_db(database_filename)
+
+    create_products_table(db, products_table, products_keys)
+    delete_from_db(db, products_table)
+    fill_products_table(db, products_table, products_keys, 4)
+
+    create_users_table(db, users_table, users_keys)
+    delete_from_db(db, users_table)
 
     close_db(db)
 
@@ -92,6 +159,5 @@ def get_all_products() -> list[Product]:
     return products
 
 
-#-----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     initiate_db()
