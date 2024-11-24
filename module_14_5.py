@@ -9,7 +9,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage, BaseStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
 
-from crud_functions import initiate_db, get_all_products
+from crud_functions import initiate_db, get_all_products, commit_and_close_db
 
 
 try:
@@ -68,13 +68,16 @@ async def get_buying_list(message: Message):
         # 'Название: Product<number> | Описание: описание <number> | Цена: <number * 100>' 4 раза.
         text = f'Название: {name} | Описание: {description} | Цена: {price}'
         # После каждой надписи выводите картинки к продуктам.
-        with open(img, 'rb') as file:
+        try:
+            file = open(img, 'rb')
             await message.answer_photo(file, text)
+        except IOError:
+            await message.answer(text)
 
     # Создайте Inline меню из 4 кнопок с надписями "Product1", "Product2", "Product3", "Product4".
     # У всех кнопок назначьте callback_data="product_buying"
     kb = InlineKeyboardMarkup()
-    kb.row(*[InlineKeyboardButton(text=name, callback_data=f"product_buying {name}") for name, _, _, _ in products])
+    kb.add(*[InlineKeyboardButton(text=name, callback_data=f"product_buying {name}") for name, _, _, _ in products])
     # В конце выведите ранее созданное Inline меню с надписью "Выберите продукт для покупки:".
     await message.answer('Выберите продукт для покупки:', reply_markup=kb)
 
@@ -183,9 +186,12 @@ async def all_messages(message: Message):
 
 def main():
     initiate_db()
-    global products
-    products = get_all_products()
-    executor.start_polling(dp, skip_updates=True)
+    try:
+        global products
+        products = get_all_products()
+        executor.start_polling(dp, skip_updates=True)
+    finally:
+        commit_and_close_db()
 
 
 if __name__ == '__main__':
