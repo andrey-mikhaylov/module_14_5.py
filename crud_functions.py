@@ -44,29 +44,6 @@ def fetch_records(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()) ->
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-def add_user(username: str, email: str, age: int):
-    """
-    добавлять в таблицу Users вашей БД запись с переданными данными
-    :param username:    имя пользователя
-    :param email:       почту
-    :param age:         возраст
-    :return:
-    """
-    # Баланс у новых пользователей всегда равен 1000.
-    # Для добавления записей в таблице используйте SQL запрос.
-    ...
-
-
-def is_included(username: str):
-    """
-    :param username:    имя пользователя
-    :return:            True, если такой пользователь есть в таблице Users в противном случае False
-    """
-    # Для получения записей используйте SQL запрос.
-    ...
-
-
-#-----------------------------------------------------------------------------------------------------------------------
 db_id               = 'INTEGER PRIMARY KEY'
 db_text             = 'TEXT'
 db_text_not_null    = 'TEXT NOT NULL'
@@ -93,6 +70,11 @@ products_keys = (
 )
 
 
+def create_products_table(db: Db, table: str, keys: TableKeys):
+    keys = ', '.join([f'{key_name} {key_type}' for key_name, key_type in keys])
+    create_table(db, table, keys)
+
+
 def fill_products_table(db: Db, table: str, keys: TableKeys, count: int):
     key_names = ', '.join([key_name for key_name, _ in keys][1:])
     for i in range(1, count+1):
@@ -102,11 +84,6 @@ def fill_products_table(db: Db, table: str, keys: TableKeys, count: int):
             100 * i,
             f'img{i}.jpg'
         ))
-
-
-def create_products_table(db: Db, table: str, keys: TableKeys):
-    keys = ', '.join([f'{key_name} {key_type}' for key_name, key_type in keys])
-    create_table(db, table, keys)
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -130,6 +107,41 @@ def create_users_table(db: Db, table: str, keys: TableKeys):
 
 #-----------------------------------------------------------------------------------------------------------------------
 database_filename = 'database.db'
+global_db = None
+
+
+def get_all_products() -> list[Product]:
+    """
+    :return: все записи из таблицы Products, полученные при помощи SQL запроса.
+    """
+    global global_db
+    global_db = open_db(database_filename)
+    db = global_db
+
+    products = [product[1:] for product in fetch_records(db, products_table)]   # skip id
+    close_db(db)
+    return products
+
+
+def add_user(username: str, email: str, age: int):
+    """
+    добавлять в таблицу Users вашей БД запись с переданными данными
+    :param username:    имя пользователя
+    :param email:       почту
+    :param age:         возраст
+    :return:
+    """
+    key_names = ', '.join([key_name for key_name, _ in users_keys][1:])
+    # Для добавления записей в таблице используйте SQL запрос.
+    # Баланс у новых пользователей всегда равен 1000.
+    global global_db
+    insert_to_db(global_db, users_table, key_names, (username, email, age, 1000))
+
+
+def fill_users_table(count: int):
+    for i in range(1, count+1):
+        add_user(f'User{i}', f'user{i}@gmail.com', 20+i)
+
 
 def initiate_db():
     """
@@ -137,7 +149,9 @@ def initiate_db():
     - таблицу Products, если она ещё не создана при помощи SQL запроса.
     - таблицы Users, если она ещё не создана при помощи SQL запроса.
     """
-    db = open_db(database_filename)
+    global global_db
+    global_db = open_db(database_filename)
+    db = global_db
 
     create_products_table(db, products_table, products_keys)
     delete_from_db(db, products_table)
@@ -145,19 +159,20 @@ def initiate_db():
 
     create_users_table(db, users_table, users_keys)
     delete_from_db(db, users_table)
+#    fill_users_table(10)
 
     close_db(db)
 
 
-def get_all_products() -> list[Product]:
+def is_included(username: str):
     """
-    :return: все записи из таблицы Products, полученные при помощи SQL запроса.
+    :param username:    имя пользователя
+    :return:            True, если такой пользователь есть в таблице Users в противном случае False
     """
-    db = open_db(database_filename)
-    products = [product[1:] for product in fetch_records(db, products_table)]   # skip id
-    close_db(db)
-    return products
+    # Для получения записей используйте SQL запрос.
+    ...
 
 
+#-----------------------------------------------------------------------------------------------------------------------
 if __name__ == '__main__':
     initiate_db()
