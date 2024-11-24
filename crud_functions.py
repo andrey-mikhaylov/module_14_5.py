@@ -134,7 +134,7 @@ def add_user(username: str, email: str, age: int):
 
 def fill_users_table(count: int):
     for i in range(1, count+1):
-        add_user(f'User{i}', f'user{i}@gmail.com', 20+i)
+        add_user(f'User{chr(64+i)}', f'user{i}@gmail.com', 20+i)
 
 
 def initiate_db():
@@ -172,7 +172,7 @@ def is_included(username: str):
     """
     # Для получения записей используйте SQL запрос.
     global global_db
-    records = db_fetch_records(global_db, users_table, 'user == ?', (username,))
+    records = db_fetch_records(global_db, users_table, 'username == ?', (username,))
     return len(records)
 
 

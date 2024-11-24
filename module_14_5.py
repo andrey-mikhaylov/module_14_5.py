@@ -9,7 +9,9 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage, BaseStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
 
-from crud_functions import initiate_db, get_all_products, commit_and_close_db
+from string import ascii_letters
+
+from crud_functions import initiate_db, get_all_products, commit_and_close_db, is_included, add_user
 products: list
 
 
@@ -164,26 +166,39 @@ class RegistrationState(StatesGroup):
 
 
 @dp.message_handler(text='Регистрация')
-def sing_up(message: Message):
+async def sign_up(message: Message):
     # Эта функция должна выводить в Telegram-бот сообщение "Введите имя пользователя (только латинский алфавит):".
+    await message.answer("Введите имя пользователя (только латинский алфавит):")
     # После ожидать ввода имени в атрибут RegistrationState.username при помощи метода set.
-    ...
+    await RegistrationState.username.set()
 
 
 @dp.message_handler(state = RegistrationState.username)
-def set_username(message: Message, state: BaseStorage):
+async def set_username(message: Message, state: BaseStorage):
+    username = message.text
+
+    if not all(map(lambda c: c in ascii_letters, username)):
+        await message.answer("только латинский алфавит")
+        return
+
+    if is_included(username):
+        # Если пользователь с таким message.text есть в таблице,
+        # то выводить "Пользователь существует, введите другое имя"
+        await message.answer("Пользователь существует, введите другое имя")
+        # и запрашивать новое состояние для RegistrationState.username.
+        return
+
     # Если пользователя message.text ещё нет в таблице,
     # то должны обновляться данные в состоянии username на message.text.
+    await state.update_data(username=username)
     # Далее выводится сообщение "Введите свой email:"
+    await message.answer("Введите свой email:")
     # и принимается новое состояние RegistrationState.email.
-    # Если пользователь с таким message.text есть в таблице,
-    # то выводить "Пользователь существует, введите другое имя"
-    # и запрашивать новое состояние для RegistrationState.username.
-    ...
+    await RegistrationState.email.set()
 
 
 @dp.message_handler(state = RegistrationState.email)
-def set_email(message: Message, state: BaseStorage):
+async def set_email(message: Message, state: BaseStorage):
     # Эта функция должна обновляться данные в состоянии RegistrationState.email на message.text.
     # Далее выводить сообщение "Введите свой возраст:":
     # После ожидать ввода возраста в атрибут RegistrationState.age.
@@ -191,11 +206,11 @@ def set_email(message: Message, state: BaseStorage):
 
 
 @dp.message_handler(state = RegistrationState.age)
-def set_age(message: Message, state: BaseStorage):
+async def set_age(message: Message, state: BaseStorage):
     # Эта функция должна обновляться данные в состоянии RegistrationState.age на message.text.
     # Далее брать все данные (username, email и age) из состояния и записывать в таблицу Users при помощи ранее написанной crud-функции add_user.
     # В конце завершать приём состояний при помощи метода finish().
-    ...
+    await state.finish()
 
 
 
