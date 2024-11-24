@@ -9,6 +9,8 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage, BaseStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
 
+from crud_functions import initiate_db, get_all_products
+
 
 try:
     from credentials import token
@@ -29,9 +31,6 @@ def calc_calories(gender: str, age: float, growth: float, weight: float):
     """
     # (10 х вес в кг) + (6, 25 х рост в см) – (5 х возраст в г) + 5(M) или -161(F).
     return (10.0 * weight) + (6.25 * growth) - (5.0 * age) + 5.0 if gender == 'M' else -161.0
-
-
-products = [(f"Продукт{i}", f"описание {i}", 100*i, f'img{i}.jpg') for i in range(1, 5)]
 
 
 bot = Bot(token=token)
@@ -183,6 +182,9 @@ async def all_messages(message: Message):
 
 
 def main():
+    initiate_db()
+    global products
+    products = get_all_products()
     executor.start_polling(dp, skip_updates=True)
 
 
