@@ -38,9 +38,6 @@ dp = Dispatcher(bot, storage=MemoryStorage())
 
 
 class UserState(StatesGroup):
-    # Создайте класс UserState наследованный от StatesGroup.
-    # Внутри этого класса опишите 3 объекта класса State: age, growth, weight (возраст, рост, вес).
-    # Эта группа(класс) будет использоваться в цепочке вызовов message_handler'ов.
     age = State()
     growth = State()
     weight = State()
@@ -49,50 +46,38 @@ class UserState(StatesGroup):
 @dp.message_handler(commands=['start'])
 async def start_message(message: Message):
     """ обработчик команды start """
-    # печатает строку в консоли 'Привет! Я бот помогающий твоему здоровью.' .
-    # Запускается только когда написана команда '/start' в чате с ботом.
     kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-    info_button = KeyboardButton(text="Информация")
-    calc_button = KeyboardButton(text="Рассчитать")
-    # В главную (обычную) клавиатуру меню добавьте кнопку "Купить".
-    buy_button = KeyboardButton(text="Купить")
-    kb.row(info_button, calc_button, buy_button)
+    kb.row(
+        KeyboardButton(text="Информация"),
+        KeyboardButton(text="Рассчитать"),
+        KeyboardButton(text="Купить")
+    )
     await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
 
 
-# Message хэндлер, который реагирует на текст "Купить" и оборачивает функцию get_buying_list(message).
 @dp.message_handler(text='Купить')
 async def get_buying_list(message: Message):
-    # Функция get_buying_list должна выводить надписи
     for name, description, price, img in products:
-        # 'Название: Product<number> | Описание: описание <number> | Цена: <number * 100>' 4 раза.
         text = f'Название: {name} | Описание: {description} | Цена: {price}'
-        # После каждой надписи выводите картинки к продуктам.
         try:
             file = open(img, 'rb')
-            await message.answer_photo(file, text)
+            await message.answer_photo(file, text)      # с картинкой, если есть
         except IOError:
-            await message.answer(text)
+            await message.answer(text)                  # или без картинки
 
-    # Создайте Inline меню из 4 кнопок с надписями "Product1", "Product2", "Product3", "Product4".
-    # У всех кнопок назначьте callback_data="product_buying"
     kb = InlineKeyboardMarkup()
     kb.add(*[InlineKeyboardButton(text=name, callback_data=f"product_buying {name}") for name, _, _, _ in products])
-    # В конце выведите ранее созданное Inline меню с надписью "Выберите продукт для покупки:".
     await message.answer('Выберите продукт для покупки:', reply_markup=kb)
 
 
 @dp.callback_query_handler(lambda t: t.data and t.data.startswith('product_buying '))
 async def send_confirm_message(call: CallbackQuery):
-    # Функция send_confirm_message, присылает сообщение "Вы успешно приобрели продукт!"
     product_name = call.data.replace('product_buying ', '')
     await call.message.answer(f"Вы успешно приобрели {product_name}!")
 
 
 @dp.message_handler(text='Рассчитать')
 async def main_menu(message: Message):
-    # Callback хэндлер, который реагирует на текст "product_buying" и оборачивает функцию send_confirm_message(call).
-    # Функция send_confirm_message, присылает сообщение "Вы успешно приобрели продукт!"
     kb = InlineKeyboardMarkup()
     info_button = InlineKeyboardButton(text='Рассчитать норму калорий', callback_data='calories')
     calc_button = InlineKeyboardButton(text='Формулы расчёта', callback_data='formulas')
@@ -113,10 +98,8 @@ async def get_formulas(call: CallbackQuery):
 
 @dp.callback_query_handler(text='calories')
 async def set_age(call: CallbackQuery):
-    # Эта функция должна выводить в Telegram-бот сообщение 'Введите свой возраст:'.)
     await call.message.answer('Введите свой возраст:')#, reply_markup=)
     await call.answer()
-    # После ожидать ввода возраста в атрибут UserState.age при помощи метода set.
     await UserState.age.set()
 
 
@@ -129,11 +112,8 @@ async def set_growth(message: Message, state: BaseStorage):
         await message.answer('Возраст должен быть положительным числом!')
         return
 
-    # Эта функция должна обновлять данные в состоянии age на message.text
     await state.update_data(age=age)
-    # Далее должна выводить в Telegram-бот сообщение 'Введите свой рост:'.
     await message.answer('Введите свой рост:')
-    # После ожидать ввода роста в атрибут UserState.growth при помощи метода set.
     await UserState.growth.set()
 
 
@@ -146,11 +126,8 @@ async def set_weight(message: Message, state: BaseStorage):
         await message.answer('Рост должен быть положительным числом!')
         return
 
-    # Эта функция должна обновлять данные в состоянии growth на message.text
     await state.update_data(growth=growth)
-    # Далее должна выводить в Telegram-бот сообщение 'Введите свой вес:'.
     await message.answer('Введите свой вес:')
-    # После ожидать ввода роста в атрибут UserState.weight при помощи метода set.
     await UserState.weight.set()
 
 
@@ -163,24 +140,20 @@ async def send_calories(message: Message, state: BaseStorage):
         await message.answer('Вес должен быть положительным числом!')
         return
 
-    # Эта функция должна обновлять данные в состоянии weight на message.text
     await state.update_data(weight=weight)
-    # Далее в функции запомните в переменную data все ранее введённые состояния
     data = await state.get_data()
     age, growth, weight = (data[k] for k in ['age', 'growth', 'weight'])
-    # Используйте упрощённую формулу Миффлина - Сан Жеора для подсчёта нормы калорий
     calories = calc_calories('M', age, growth, weight)
-    # Результат вычисления по формуле отправьте ответом пользователю в Telegram-бот.
     await message.answer(f'Ваша норма калорий: {calories}')
-    # Финишируйте машину состояний методом finish().
     await state.finish()
 
 
 @dp.message_handler()
 async def all_messages(message: Message):
-    """ обработчик остальных сообщений """
-    # печатает строку в консоли 'Введите команду /start, чтобы начать общение.'.
-    # Запускается при любом обращении не описанном ранее.
+    """
+    обработчик остальных сообщений
+    Запускается при любом обращении не описанном ранее.
+    """
     await message.answer('Введите команду /start, чтобы начать общение.')
 
 
