@@ -128,7 +128,6 @@ def add_user(username: str, email: str, age: int):
     :return:
     """
     key_names = ', '.join([key_name for key_name, _ in users_keys][1:])
-    # Для добавления записей в таблице используйте SQL запрос.
     # Баланс у новых пользователей всегда равен 1000.
     insert_to_db(global_db, users_table, key_names, (username, email, age, 1000))
 
@@ -157,6 +156,7 @@ def clear_db():
 
 
 def fill_db():
+    # Перед запуском бота пополните вашу таблицу Products 4 или более записями для последующего вывода в чате Telegram-бота.
     fill_products_table(6)
     fill_users_table(10)
 

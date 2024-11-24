@@ -1,6 +1,6 @@
-from email import message_from_binary_file
+#from email import message_from_binary_file
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import Bot, Dispatcher, executor
 from aiogram.types.message import Message
 from aiogram.types.callback_query import CallbackQuery
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -10,6 +10,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 #import asyncio
 
 from crud_functions import initiate_db, get_all_products, commit_and_close_db
+products: list
 
 
 try:
@@ -37,6 +38,7 @@ bot = Bot(token=token)
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 
+#-----------------------------------------------------------------------------------------------------------------------
 class UserState(StatesGroup):
     age = State()
     growth = State()
@@ -50,7 +52,9 @@ async def start_message(message: Message):
     kb.row(
         KeyboardButton(text="Информация"),
         KeyboardButton(text="Рассчитать"),
-        KeyboardButton(text="Купить")
+        KeyboardButton(text="Купить"),
+        # Кнопки главного меню дополните кнопкой "Регистрация".
+        KeyboardButton(text="Регистрация")
     )
     await message.answer('Привет! Я бот помогающий твоему здоровью.', reply_markup=kb)
 
@@ -148,6 +152,54 @@ async def send_calories(message: Message, state: BaseStorage):
     await state.finish()
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+# Создайте цепочку изменений состояний RegistrationState.
+# Напишите новый класс состояний RegistrationState
+class RegistrationState(StatesGroup):
+    # с следующими объектами класса State: username, email, age, balance(по умолчанию 1000).
+    username = State()
+    email = State()
+    age = State()
+    balance = State('1000')
+
+
+@dp.message_handler(text='Регистрация')
+def sing_up(message: Message):
+    # Эта функция должна выводить в Telegram-бот сообщение "Введите имя пользователя (только латинский алфавит):".
+    # После ожидать ввода имени в атрибут RegistrationState.username при помощи метода set.
+    ...
+
+
+@dp.message_handler(state = RegistrationState.username)
+def set_username(message: Message, state: BaseStorage):
+    # Если пользователя message.text ещё нет в таблице,
+    # то должны обновляться данные в состоянии username на message.text.
+    # Далее выводится сообщение "Введите свой email:"
+    # и принимается новое состояние RegistrationState.email.
+    # Если пользователь с таким message.text есть в таблице,
+    # то выводить "Пользователь существует, введите другое имя"
+    # и запрашивать новое состояние для RegistrationState.username.
+    ...
+
+
+@dp.message_handler(state = RegistrationState.email)
+def set_email(message: Message, state: BaseStorage):
+    # Эта функция должна обновляться данные в состоянии RegistrationState.email на message.text.
+    # Далее выводить сообщение "Введите свой возраст:":
+    # После ожидать ввода возраста в атрибут RegistrationState.age.
+    ...
+
+
+@dp.message_handler(state = RegistrationState.age)
+def set_age(message: Message, state: BaseStorage):
+    # Эта функция должна обновляться данные в состоянии RegistrationState.age на message.text.
+    # Далее брать все данные (username, email и age) из состояния и записывать в таблицу Users при помощи ранее написанной crud-функции add_user.
+    # В конце завершать приём состояний при помощи метода finish().
+    ...
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 @dp.message_handler()
 async def all_messages(message: Message):
     """
