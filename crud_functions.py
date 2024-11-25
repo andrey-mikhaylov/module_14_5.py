@@ -5,6 +5,13 @@ import sqlite3
 from sqlite3 import Connection as Db
 
 
+db_id               = 'INTEGER PRIMARY KEY'
+db_text             = 'TEXT'
+db_text_not_null    = 'TEXT NOT NULL'
+db_int              = 'INTEGER'
+db_int_not_null     = 'INTEGER NOT NULL'
+
+
 def open_db(database_name: str) -> Db:
     db = sqlite3.connect(database_name)
     return db
@@ -37,18 +44,10 @@ def delete_from_db(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()):
     cursor.execute(cmd, params)
 
 
-def db_fetch_records(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()) -> list:
+def fetch_records_from_db(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()) -> list:
     cursor = db.cursor()
     cursor.execute(f'SELECT * FROM {table} WHERE {cond}', params)
     return cursor.fetchall()
-
-
-#-----------------------------------------------------------------------------------------------------------------------
-db_id               = 'INTEGER PRIMARY KEY'
-db_text             = 'TEXT'
-db_text_not_null    = 'TEXT NOT NULL'
-db_int              = 'INTEGER'
-db_int_not_null     = 'INTEGER NOT NULL'
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -100,43 +99,6 @@ database_filename = 'database.db'
 global_db: Db
 
 
-def get_all_products() -> list[Product]:
-    """
-    :return: все записи из таблицы Products, полученные при помощи SQL запроса.
-    """
-    products = [product[1:] for product in db_fetch_records(global_db, products_table)]   # skip id
-    return products
-
-
-def fill_products_table(count: int):
-    key_names = ', '.join([key_name for key_name, _ in products_keys][1:])
-    for i in range(1, count+1):
-        insert_to_db(global_db, products_table, key_names, (
-            f"Продукт{i}",
-            f"описание {i}",
-            100 * i,
-            f'img{i}.jpg'
-        ))
-
-
-def add_user(username: str, email: str, age: int):
-    """
-    добавлять в таблицу Users вашей БД запись с переданными данными
-    :param username:    имя пользователя
-    :param email:       почту
-    :param age:         возраст
-    :return:
-    """
-    key_names = ', '.join([key_name for key_name, _ in users_keys][1:])
-    # Баланс у новых пользователей всегда равен 1000.
-    insert_to_db(global_db, users_table, key_names, (username, email, age, 1000))
-
-
-def fill_users_table(count: int):
-    for i in range(1, count+1):
-        add_user(f'User{chr(64+i)}', f'user{i}@gmail.com', 20+i)
-
-
 def initiate_db():
     """
     создаёт:
@@ -150,19 +112,53 @@ def initiate_db():
     create_users_table(global_db, users_table, users_keys)
 
 
-def clear_db():
-    delete_from_db(global_db, products_table)
-#    delete_from_db(global_db, users_table)
-
-
-def fill_db():
-    # Перед запуском бота пополните вашу таблицу Products 4 или более записями для последующего вывода в чате Telegram-бота.
-    fill_products_table(6)
-#    fill_users_table(10)
-
-
 def commit_and_close_db():
+    """
+    закрывает базу данных
+    """
     close_db(global_db)
+
+
+def clear_db():
+    """
+    очищает базу данных:
+        - таблицу Products
+        - таблицу Users
+    """
+    delete_from_db(global_db, products_table)
+    delete_from_db(global_db, users_table)
+
+
+def get_all_products() -> list[Product]:
+    """
+    :return: все записи из таблицы Products
+    """
+    # skip id
+    products = [product[1:] for product in fetch_records_from_db(global_db, products_table)]
+    return products
+
+
+def add_product(title: str, description: str, price: int, image: str):
+    """
+    :param title:       название товара
+    :param description: описание
+    :param price:       цена
+    :param image:       фотография
+    """
+    key_names = ', '.join([key_name for key_name, _ in products_keys][1:])
+    insert_to_db(global_db, products_table, key_names, (title, description, price, image))
+
+
+def add_user(username: str, email: str, age: int):
+    """
+    добавлять в таблицу Users вашей БД запись с переданными данными
+    :param username:    имя пользователя
+    :param email:       почта
+    :param age:         возраст
+    """
+    key_names = ', '.join([key_name for key_name, _ in users_keys][1:])
+    # Баланс у новых пользователей всегда равен 1000.
+    insert_to_db(global_db, users_table, key_names, (username, email, age, 1000))
 
 
 def is_included(username: str):
@@ -171,15 +167,30 @@ def is_included(username: str):
     :return:            True, если такой пользователь есть в таблице Users в противном случае False
     """
     # Для получения записей используйте SQL запрос.
-    global global_db
-    records = db_fetch_records(global_db, users_table, 'username == ?', (username,))
-    return len(records)
+    records = fetch_records_from_db(global_db, users_table, 'username == ?', (username,))
+    return len(records) != 0
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+def fill_products_table(count: int):
+    for i in range(1, count+1):
+        add_product(f"Продукт{i}", f"описание {i}", 100 * i, f'img{i}.jpg')
+
+
+def fill_users_table(count: int):
+    for i in range(1, count+1):
+        add_user(f'User{chr(64+i)}', f'user{i}@gmail.com', 20+i)
+
+
 if __name__ == '__main__':
     initiate_db()
     clear_db()
-    fill_db()
+
+    # Перед запуском бота пополните вашу таблицу Products
+    # 4 или более записями для последующего вывода в чате Telegram-бота.
+    fill_products_table(6)
+
+    #fill_users_table(10)
+
     commit_and_close_db()
 
