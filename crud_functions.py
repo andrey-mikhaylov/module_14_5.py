@@ -17,11 +17,6 @@ def open_db(database_name: str) -> Db:
     return db
 
 
-def close_db(db: Db):
-    db.commit()
-    db.close()
-
-
 def create_table(db: Db, table: str, keys: str):
     """
     :param db:      соединение с базой данных
@@ -44,9 +39,9 @@ def delete_from_db(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()):
     cursor.execute(cmd, params)
 
 
-def fetch_records_from_db(db: Db, table: str, cond: str = 'TRUE', params: tuple = ()) -> list:
+def fetch_records_from_db(db: Db, table: str, cond: str = 'TRUE', params: tuple = (), fields: str = '*') -> list:
     cursor = db.cursor()
-    cursor.execute(f'SELECT * FROM {table} WHERE {cond}', params)
+    cursor.execute(f'SELECT {fields} FROM {table} WHERE {cond}', params)
     return cursor.fetchall()
 
 
@@ -112,11 +107,11 @@ def initiate_db():
     create_users_table(global_db, users_table, users_keys)
 
 
-def commit_and_close_db():
+def close_db():
     """
     закрывает базу данных
     """
-    close_db(global_db)
+    global_db.close()
 
 
 def clear_db():
@@ -135,6 +130,8 @@ def get_all_products() -> list[Product]:
     """
     # skip id
     products = [product[1:] for product in fetch_records_from_db(global_db, products_table)]
+#     key_names = ', '.join([key_name for key_name, _ in products_keys][1:])
+#     products = fetch_records_from_db(global_db, products_table, fields=key_names)
     return products
 
 
@@ -147,6 +144,7 @@ def add_product(title: str, description: str, price: int, image: str):
     """
     key_names = ', '.join([key_name for key_name, _ in products_keys][1:])
     insert_to_db(global_db, products_table, key_names, (title, description, price, image))
+    global_db.commit()
 
 
 def add_user(username: str, email: str, age: int):
@@ -159,6 +157,7 @@ def add_user(username: str, email: str, age: int):
     key_names = ', '.join([key_name for key_name, _ in users_keys][1:])
     # Баланс у новых пользователей всегда равен 1000.
     insert_to_db(global_db, users_table, key_names, (username, email, age, 1000))
+    global_db.commit()
 
 
 def is_included(username: str):
@@ -192,5 +191,4 @@ if __name__ == '__main__':
 
     #fill_users_table(10)
 
-    commit_and_close_db()
-
+    close_db()

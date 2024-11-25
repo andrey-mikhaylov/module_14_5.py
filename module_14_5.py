@@ -11,7 +11,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from string import ascii_letters
 
-from crud_functions import initiate_db, get_all_products, commit_and_close_db, is_included, add_user
+from crud_functions import initiate_db, get_all_products, close_db, is_included, add_user
 products: list
 
 
@@ -244,7 +244,7 @@ def main():
         products = get_all_products()
         executor.start_polling(dp, skip_updates=True)
     finally:
-        commit_and_close_db()
+        close_db()
 
 
 if __name__ == '__main__':
