@@ -152,13 +152,13 @@ def initiate_db():
 
 def clear_db():
     delete_from_db(global_db, products_table)
-    delete_from_db(global_db, users_table)
+#    delete_from_db(global_db, users_table)
 
 
 def fill_db():
     # Перед запуском бота пополните вашу таблицу Products 4 или более записями для последующего вывода в чате Telegram-бота.
     fill_products_table(6)
-    fill_users_table(10)
+#    fill_users_table(10)
 
 
 def commit_and_close_db():

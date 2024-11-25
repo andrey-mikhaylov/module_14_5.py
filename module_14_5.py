@@ -200,18 +200,31 @@ async def set_username(message: Message, state: BaseStorage):
 @dp.message_handler(state = RegistrationState.email)
 async def set_email(message: Message, state: BaseStorage):
     # Эта функция должна обновляться данные в состоянии RegistrationState.email на message.text.
+    await state.update_data(email=message.text)
     # Далее выводить сообщение "Введите свой возраст:":
+    await message.answer("Введите свой возраст:")
     # После ожидать ввода возраста в атрибут RegistrationState.age.
-    ...
+    await RegistrationState.age.set()
 
 
 @dp.message_handler(state = RegistrationState.age)
 async def set_age(message: Message, state: BaseStorage):
+    try:
+        age = float(message.text)
+        assert age > 0
+    except (ValueError, AssertionError):
+        await message.answer('Возраст должен быть положительным числом!')
+        return
+
     # Эта функция должна обновляться данные в состоянии RegistrationState.age на message.text.
-    # Далее брать все данные (username, email и age) из состояния и записывать в таблицу Users при помощи ранее написанной crud-функции add_user.
+    await state.update_data(age=age)
+    # Далее брать все данные (username, email и age) из состояния
+    data = await state.get_data()
+    username, email, age = (data[k] for k in ['username', 'email', 'age'])
+    # и записывать в таблицу Users при помощи ранее написанной crud-функции add_user.
+    add_user(username, email, age)
     # В конце завершать приём состояний при помощи метода finish().
     await state.finish()
-
 
 
 #-----------------------------------------------------------------------------------------------------------------------
